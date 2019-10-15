@@ -3,6 +3,7 @@ module Main exposing (main)
 import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (onClick)
 
 
 -- MAIN
@@ -71,9 +72,12 @@ view : Model -> Html Msg
 view model =
     div []
         [ h1 [ class "games-section" ] [ text "Games" ]
-        , button [ class "button" ] [ text "Display Games List" ]
-        , button [ class "button" ] [ text "Hide Games List" ]
-        , gamesIndex model
+        , button [ class "button", onClick DisplayGamesList ] [ text "Display Games List" ]
+        , button [ class "button", onClick HideGamesList ] [ text "Hide Games List" ]
+        , if model.displayGamesList then
+            gamesIndex model
+          else
+            div [] []
         ]
 
 gamesIndex : Model -> Html msg
