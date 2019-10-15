@@ -4,6 +4,8 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick)
+import Http
+import Json.Decode as Decode
 
 
 -- MAIN
@@ -23,7 +25,6 @@ main =
 
 type alias Model =
     { gamesList : List Game
-    , displayGamesList : Bool
     }
 
 type alias Game =
@@ -33,29 +34,58 @@ type alias Game =
 
 initialModel : Model
 initialModel =
-    { gamesList =
-        [ { title = "Platform Game", description = "Platform game example." }
-        , { title = "Adventure Game", description = "Adventure game example." }
-        ]
-    , displayGamesList = True
+    { gamesList = []
     }
+
+initialCommand : Cmd Msg
+initialCommand =
+    fetchGamesList
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    ( initialModel, Cmd.none )
+    ( initialModel, initialCommand )
+
+
+-- API
+
+
+fetchGamesList : Cmd Msg
+fetchGamesList =
+    Http.get
+        { url = "/api/games"
+        , expect = Http.expectJson FetchGamesList decodeGamesList
+        }
+
+decodeGamesList : Decode.Decoder (List Game)
+decodeGamesList =
+    decodeGame
+        |> Decode.list
+        |> Decode.at [ "data" ]
+
+decodeGame : Decode.Decoder Game
+decodeGame =
+    Decode.map2 Game
+        (Decode.field "title" Decode.string)
+        (Decode.field "description" Decode.string)
+
+
 
 -- UPDATE
 
-type Msg = DisplayGamesList | HideGamesList
+type Msg 
+    = FetchGamesList (Result Http.Error (List Game))
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model = 
     case msg of
-        DisplayGamesList ->
-            ( { model | displayGamesList = True }, Cmd.none )
+        FetchGamesList result ->
+            case result of
+                Ok games ->
+                    ( { model | gamesList = games }, Cmd.none )
 
-        HideGamesList ->
-            ( { model | displayGamesList = False }, Cmd.none )
+                Err _ ->
+                    Debug.log "Error fetching games from API."
+                        ( model, Cmd.none )
 
 
 -- SUBSCRIPTIONS
@@ -70,14 +100,12 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    div []
+    if List.isEmpty model.gamesList then
+        div [] []
+    else
+        div []
         [ h1 [ class "games-section" ] [ text "Games" ]
-        , button [ class "button", onClick DisplayGamesList ] [ text "Display Games List" ]
-        , button [ class "button", onClick HideGamesList ] [ text "Hide Games List" ]
-        , if model.displayGamesList then
-            gamesIndex model
-          else
-            div [] []
+        , gamesIndex model
         ]
 
 gamesIndex : Model -> Html msg
