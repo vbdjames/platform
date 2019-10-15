@@ -16,3 +16,6 @@ config :platform, PlatformWeb.Endpoint,
 
 # Print only warnings and errors during test
 config :logger, level: :warn
+
+# Reduce bcrypt rounds to speed up tests
+config :bcrypt_elixir, :log_rounds,4 
